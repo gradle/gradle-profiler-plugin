@@ -1,0 +1,62 @@
+plugins {
+    // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '0.10.1'
+}
+
+group = 'org.gradle'
+version = '0.0.1'
+
+publishing {
+    repositories {
+        maven {
+            url = uri("${buildDir}/repo")
+        }
+    }
+}
+
+repositories {
+    jcenter()
+    maven {
+        name = "external"
+        url = uri("$buildDir/repo")
+    }
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:27.1-jre'
+    testImplementation 'junit:junit:4.12'
+}
+
+gradlePlugin {
+    plugins {
+        profiler {
+            id = 'org.gradle.gradle-profiler'
+            implementationClass = 'org.gradle.profiler.internal.GradleProfilerPlugin'
+        }
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/gradle/gradle-profiler-plugin'
+    vcsUrl = 'https://github.com/gradle/gradle-profiler-plugin'
+    tags = ['gradle', 'profiler', 'async-profiler']
+}
+
+sourceSets {
+    functionalTest {
+    }
+}
+
+gradlePlugin.testSourceSets(sourceSets.functionalTest)
+configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+
+task functionalTest(type: Test) {
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+}
+
+check {
+    dependsOn(tasks.functionalTest)
+}

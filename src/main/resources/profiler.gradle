@@ -1,0 +1,47 @@
+String asyncProfilerHome = '%async.profiler.location%'
+String asyncProfilerScript = "$asyncProfilerHome/profiler.sh"
+File preferencesFile = new File('%global.preferences.file%')
+
+if (preferencesFile.exists()) {
+    // Workaround to obtain the PID. The ProcessHandle class is available since Java 9 only
+    java.lang.management.RuntimeMXBean runtime = java.lang.management.ManagementFactory.getRuntimeMXBean();
+    java.lang.reflect.Field jvm = runtime.getClass().getDeclaredField("jvm");
+    jvm.setAccessible(true);
+    sun.management.VMManagement mgmt = (sun.management.VMManagement) jvm.get(runtime);
+    java.lang.reflect.Method pid_method = mgmt.getClass().getDeclaredMethod("getProcessId");
+    pid_method.setAccessible(true);
+
+    def pid = (Integer) pid_method.invoke(mgmt);
+
+    // Will be called multiple times for composite builds (does not cause any problems)
+    "$asyncProfilerScript start $pid".execute()
+
+    // printing the output in `projectEvaluated` as in here as we have access to the root project here
+    gradle.projectsEvaluated {
+        if (preferencesFile.exists() && preferencesFile.text.contains(gradle.rootProject.projectDir.absolutePath)) {
+            def shouldSaveProfiling = !gradle.startParameter.taskNames.find { it.contains('disableProfiling') }
+
+            if (shouldSaveProfiling) {
+                gradle.rootProject.logger.quiet "Started profiling process $pid."
+            }
+
+            // stop the profiling when the build finishes
+            gradle.buildFinished {
+                def profilesDir = new File(gradle.rootProject.projectDir, '.gradle-profiles')
+                profilesDir.mkdirs()
+                int i = 1
+                File profileFile
+                while ((profileFile = new File(profilesDir, "profile-${i}.collapsed")).exists()) {
+                    i++
+                }
+
+                if (shouldSaveProfiling) {
+                    "$asyncProfilerScript stop -f ${profileFile.absolutePath} $pid".execute()
+                    gradle.rootProject.logger.quiet "Finished profiling process $pid. Results saved at ${profileFile.absolutePath}."
+                } else {
+                    "$asyncProfilerScript stop $pid".execute()
+                }
+            }
+        }
+    }
+}
