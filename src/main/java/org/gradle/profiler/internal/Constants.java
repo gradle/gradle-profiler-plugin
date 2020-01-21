@@ -26,6 +26,4 @@ public final class Constants {
     public static final String LOCATION_CUSTOM_INIT_SCRIPT = "init.d/profiling.gradle";
     public static final String LOCATION_PROFILES = ".gradle-profiles";
     public static final String LOCATION_SANITIZED_PROFILE = ".gradle-profiles/sanitized.collapsed";
-
-
 }

@@ -21,67 +21,69 @@ import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Comparator;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GradleProfilerPluginFunctionalTest {
 
-    private File projectDir;
+    @TempDir
+    File projectDir;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
-        projectDir = new File("build/functionalTest/GradleIdeSyncPerformancePluginFunctionalTest");
-        projectDir.mkdirs();
-
         Files.asCharSink(new File(projectDir, "settings.gradle"), Charsets.UTF_8, FileWriteMode.APPEND)
                 .write("");
         Files.asCharSink(new File(projectDir, "build.gradle"), Charsets.UTF_8, FileWriteMode.APPEND)
                 .write("plugins { id 'org.gradle.gradle-profiler' }");
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         runTask("disableProfiling");
-        java.nio.file.Files.walk(projectDir.toPath())
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
     }
 
-    @Test
-    public void can_enable_profiling() throws Exception {
+    @ParameterizedTest(name = "Can enable profiling with Gradle {0}")
+    @MethodSource("getTestedGradleVersions")
+    public void can_enable_profiling(String gradleVersion) throws IOException {
         // setup:
-        runTask("enableProfiling");
+        runTask("enableProfiling", gradleVersion);
 
         // when:
-        BuildResult result = runTask("help");
+        BuildResult result = runTask("help", gradleVersion);
 
         // then:
-        assertTrue(result.getOutput().contains("Started profiling process"));
-        assertTrue(result.getOutput().contains("Finished profiling process"));
-        assertTrue(result.getOutput().contains("Results saved at " + projectDir.getAbsolutePath() + "/.gradle-profiles/profile-1.collapsed"));
+        assertOutputContains(result, "BUILD SUCCESSFUL");
+        assertOutputContains(result, "Started profiling process");
+        assertOutputContains(result, "Finished profiling process");
+        assertOutputContains(result, "Results saved at " + projectDir.getCanonicalPath() + "/.gradle-profiles/profile-1.collapsed");
+        assertFileCreatedAsync(projectDir.getAbsolutePath() + "/.gradle-profiles/profile-1.collapsed");
     }
 
-    @Test
-    public void can_disable_profiling() throws Exception {
+    @ParameterizedTest(name = "Can disable profiling with Gradle {0}")
+    @MethodSource("getTestedGradleVersions")
+    public void can_disable_profiling(String gradleVersion) {
         // setup:
-        runTask("enableProfiling");
-        runTask("disableProfiling");
+        runTask("enableProfiling", gradleVersion);
+        runTask("disableProfiling", gradleVersion);
 
         // when:
-        BuildResult result = runTask("help");
+        BuildResult result = runTask("help", gradleVersion);
 
         // then:
-        assertTrue(!result.getOutput().contains("Started profiling process"));
-        assertTrue(!result.getOutput().contains("Finished profiling process"));
+        assertOutputContains(result, "BUILD SUCCESSFUL");
+        assertOutputNotContains(result, "Started profiling process");
+        assertOutputNotContains(result,"Finished profiling process");
     }
 
     @Test
@@ -91,8 +93,9 @@ public class GradleProfilerPluginFunctionalTest {
         BuildResult result = runTask("disableProfiling");
 
         // then:
-        assertTrue(!result.getOutput().contains("Started profiling process"));
-        assertTrue(!result.getOutput().contains("Finished profiling process"));
+        assertOutputContains(result, "BUILD SUCCESSFUL");
+        assertOutputNotContains(result, "Started profiling process");
+        assertOutputNotContains(result, "Finished profiling process");
     }
 
     private BuildResult runTask(String task) {
@@ -102,5 +105,44 @@ public class GradleProfilerPluginFunctionalTest {
                 .withArguments(task)
                 .withProjectDir(projectDir)
                 .build();
+    }
+
+    private BuildResult runTask(String task, String version) {
+        return GradleRunner.create()
+                .forwardOutput()
+                .withPluginClasspath()
+                .withArguments(task)
+                .withProjectDir(projectDir)
+                .withGradleVersion(version)
+                .build();
+    }
+
+    private static Stream<String> getTestedGradleVersions() {
+        return Stream.of("6.1", "5.6.2", "5.0");
+    }
+
+    private static void assertOutputContains(BuildResult result, String s) {
+        assertTrue(result.getOutput().contains(s));
+    }
+
+    private static void assertOutputNotContains(BuildResult result, String s) {
+        assertTrue(!result.getOutput().contains(s));
+    }
+
+    private void assertFileCreatedAsync(String path) {
+        assertTrue(waitFor(() -> new File(path).exists()));
+    }
+    private static <T> boolean waitFor(Supplier<Boolean> condition) {
+        long start = System.currentTimeMillis();
+        while(!condition.get()) {
+            if ((System.currentTimeMillis() - start) > 10000) {
+                return false;
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignore) {
+            }
+        }
+        return true;
     }
 }
