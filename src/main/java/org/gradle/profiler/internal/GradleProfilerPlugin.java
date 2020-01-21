@@ -30,12 +30,12 @@ public class GradleProfilerPlugin implements Plugin<Project> {
             throw new InvalidUserCodeException("The 'org.gradle.gradle-profiler' plugin should be applied on the root project only");
         }
 
-        ProfilerConfigurationExtension extension = project.getExtensions().create("profiler", ProfilerConfigurationExtension.class, project);
+        ProfilerConfigurationExtension configuration = project.getExtensions().create("profiler", ProfilerConfigurationExtension.class, project);
         String group = "profiler";
 
         project.getTasks().register("enableProfiling", EnableProfilingTask.class, task -> {
             task.setGroup(group);
-            task.asyncProfilerLocation = extension.getAsyncProfilerLocation();
+            task.apply(configuration);
         });
 
         project.getTasks().register("disableProfiling", DisableProfilingTask.class, task -> {

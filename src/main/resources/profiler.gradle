@@ -14,7 +14,8 @@ if (preferencesFile.exists()) {
     def pid = (Integer) pid_method.invoke(mgmt);
 
     // Will be called multiple times for composite builds (does not cause any problems)
-    "$asyncProfilerScript start $pid".execute()
+    def startCommand = "$asyncProfilerScript start %async.profiler.parameters% $pid"
+    def startOutput = startCommand.execute()
 
     // printing the output in `projectEvaluated` as in here as we have access to the root project here
     gradle.projectsEvaluated {
@@ -22,7 +23,11 @@ if (preferencesFile.exists()) {
             def shouldSaveProfiling = !gradle.startParameter.taskNames.find { it.contains('disableProfiling') }
 
             if (shouldSaveProfiling) {
-                gradle.rootProject.logger.quiet "Started profiling process $pid."
+                def logger = gradle.rootProject.logger
+                logger.info "[Profiler] Preferences file: $preferencesFile"
+                logger.info "[Profiler] Start command: $startCommand"
+                logger.info "[Profiler] Start command output: $startOutput"
+                logger.lifecycle "[Profiler] Started profiling process $pid."
             }
 
             // stop the profiling when the build finishes
@@ -36,8 +41,12 @@ if (preferencesFile.exists()) {
                 }
 
                 if (shouldSaveProfiling) {
-                    "$asyncProfilerScript stop -f ${profileFile.absolutePath} $pid".execute()
-                    gradle.rootProject.logger.quiet "Finished profiling process $pid. Results saved at ${profileFile.absolutePath}."
+                    def stopCommand = "$asyncProfilerScript stop -f ${profileFile.absolutePath} $pid"
+                    def stopCommandOutput =  stopCommand.execute()
+                    def logger = gradle.rootProject.logger
+                    logger.info "[Profiler] Stop command: $stopCommand"
+                    logger.info "[Profiler] Stop command output: $stopCommandOutput"
+                    logger.lifecycle "[Profiler] Finished profiling process $pid. Results saved at ${profileFile.absolutePath}."
                 } else {
                     "$asyncProfilerScript stop $pid".execute()
                 }

@@ -17,17 +17,37 @@
 package org.gradle.profiler.internal;
 
 import org.gradle.api.Project;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class ProfilerConfigurationExtension {
 
     private final Property<String> asyncProfilerLocation;
+    private final ListProperty<String> asyncProfilerParameters;
 
     public ProfilerConfigurationExtension(Project project) {
-        asyncProfilerLocation = project.getObjects().property(String.class);
+        asyncProfilerLocation = project.getObjects().property(String.class).convention(System.getProperty("user.home") + "/async-profiler");
+        asyncProfilerParameters = project.getObjects().listProperty(String.class).convention(Arrays.asList("-e", "cpu"));
     }
 
     public Property<String> getAsyncProfilerLocation() {
         return asyncProfilerLocation;
+    }
+
+    public void asyncProfilerLocation(String location) {
+        asyncProfilerLocation.set(location);
+    }
+
+    public ListProperty<String> getAsyncProfilerParameters() {
+        return asyncProfilerParameters;
+    }
+
+    public void asyncProfilerParameters(String... parameters) {
+        asyncProfilerParameters.set(Arrays.asList(parameters));
     }
 }

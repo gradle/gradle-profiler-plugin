@@ -42,10 +42,11 @@ public class GradleProfilerPluginFunctionalTest {
 
     @BeforeEach
     public void setUp() throws IOException {
-        Files.asCharSink(new File(projectDir, "settings.gradle"), Charsets.UTF_8, FileWriteMode.APPEND)
-                .write("");
-        Files.asCharSink(new File(projectDir, "build.gradle"), Charsets.UTF_8, FileWriteMode.APPEND)
-                .write("plugins { id 'org.gradle.gradle-profiler' }");
+        writeSettingsFile("");
+        writeBuildFile("" +
+                "plugins {\n" +
+                "   id 'org.gradle.gradle-profiler'\n" +
+                "}\n");
     }
 
     @AfterEach
@@ -57,10 +58,10 @@ public class GradleProfilerPluginFunctionalTest {
     @MethodSource("getTestedGradleVersions")
     public void can_enable_profiling(String gradleVersion) throws IOException {
         // setup:
-        runTask("enableProfiling", gradleVersion);
+        runTaskWithVersion(gradleVersion, "enableProfiling");
 
         // when:
-        BuildResult result = runTask("help", gradleVersion);
+        BuildResult result = runTaskWithVersion(gradleVersion, "help");
 
         // then:
         assertOutputContains(result, "BUILD SUCCESSFUL");
@@ -74,11 +75,11 @@ public class GradleProfilerPluginFunctionalTest {
     @MethodSource("getTestedGradleVersions")
     public void can_disable_profiling(String gradleVersion) {
         // setup:
-        runTask("enableProfiling", gradleVersion);
-        runTask("disableProfiling", gradleVersion);
+        runTaskWithVersion(gradleVersion, "enableProfiling");
+        runTaskWithVersion(gradleVersion, "disableProfiling");
 
         // when:
-        BuildResult result = runTask("help", gradleVersion);
+        BuildResult result = runTaskWithVersion(gradleVersion, "help");
 
         // then:
         assertOutputContains(result, "BUILD SUCCESSFUL");
@@ -98,27 +99,56 @@ public class GradleProfilerPluginFunctionalTest {
         assertOutputNotContains(result, "Finished profiling process");
     }
 
-    private BuildResult runTask(String task) {
+    @Test
+    public void can_configure_async_profiler() throws IOException {
+        // setup:
+        writeBuildFile("" +
+                "profiler {\n" +
+                "    asyncProfilerParameters '-e', 'mem' \n" +
+                "}\n");
+
+        // then:
+        runTask("enableProfiling");
+        BuildResult result = runTask("help", "--info");
+
+        // then:
+        assertOutputContains(result, "BUILD SUCCESSFUL");
+        assertOutputContains(result, "profiler.sh start -e mem");
+    }
+
+    private void writeBuildFile(String content) throws IOException {
+        writeProjectFile("build.gradle", content);
+    }
+
+    private void writeSettingsFile(String content) throws IOException {
+        writeProjectFile("settings.gradle", content);
+    }
+
+    private void writeProjectFile(String fileName, String content) throws IOException {
+        Files.asCharSink(new File(projectDir, fileName), Charsets.UTF_8, FileWriteMode.APPEND).write(content);
+    }
+
+    private BuildResult runTask(String... arguments) {
         return GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(task)
+                .withArguments(arguments)
                 .withProjectDir(projectDir)
                 .build();
     }
 
-    private BuildResult runTask(String task, String version) {
+    private BuildResult runTaskWithVersion(String version, String... arguments) {
         return GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(task)
+                .withArguments(arguments)
                 .withProjectDir(projectDir)
                 .withGradleVersion(version)
                 .build();
     }
 
     private static Stream<String> getTestedGradleVersions() {
-        return Stream.of("6.1", "5.6.2", "5.0");
+        return Stream.of("6.1", "5.6.2", "5.1");
     }
 
     private static void assertOutputContains(BuildResult result, String s) {

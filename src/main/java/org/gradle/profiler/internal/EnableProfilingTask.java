@@ -21,6 +21,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.TaskAction;
 
@@ -28,10 +29,17 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.stream.Collectors;
 
 public class EnableProfilingTask extends DefaultTask {
 
-    public Property<String> asyncProfilerLocation;
+    private Property<String> asyncProfilerLocation;
+    private ListProperty<String> asyncProfilerParameters;
+
+    void apply(ProfilerConfigurationExtension configuration) {
+        asyncProfilerLocation = configuration.getAsyncProfilerLocation();
+        asyncProfilerParameters = configuration.getAsyncProfilerParameters();
+    }
 
     @TaskAction
     public void enableProfiling() {
@@ -45,18 +53,13 @@ public class EnableProfilingTask extends DefaultTask {
     }
 
     private void verifyConfiguration() {
-        if (!asyncProfilerLocation.isPresent()) {
-            String defaultAsyncProfilerLocation = System.getProperty("user.home") + "/async-profiler";
-            if (new File(defaultAsyncProfilerLocation).exists()) {
-                asyncProfilerLocation.set(defaultAsyncProfilerLocation);
-            } else {
-                throw new org.gradle.api.InvalidUserCodeException("Async Profiler location not declared.\n\n" +
-                        "Download the Async Profiler (https://github.com/jvm-profiling-tools/async-profiler) to your machine and place it in the " + defaultAsyncProfilerLocation + " directory.\n" +
-                        "To use a different installation path, add the following configuration in your build:\n\n" +
-                        "profiler {\n" +
-                        "  asyncProfilerLocation = \"/path/to/async/profiler\"\n" +
-                        "}");
-            }
+        if (!new File(asyncProfilerLocation.get()).exists()) {
+            throw new org.gradle.api.InvalidUserCodeException("Async Profiler location not declared.\n\n" +
+                    "Download Async Profiler (https://github.com/jvm-profiling-tools/async-profiler) and place it in the " + asyncProfilerLocation.get() + " directory.\n" +
+                    "Use the following snippet to configure custom installation paths:\n\n" +
+                    "profiler {\n" +
+                    "  asyncProfilerLocation = \"/path/to/async/profiler\"\n" +
+                    "}");
         }
     }
 
@@ -66,7 +69,8 @@ public class EnableProfilingTask extends DefaultTask {
         String profileScriptContent = CharStreams.toString(new InputStreamReader(getClass().getResource("/profiler.gradle").openStream(), Charsets.UTF_8));
         profileScriptContent = profileScriptContent
                 .replaceAll("%async.profiler.location%", asyncProfilerLocation.get())
-                .replaceAll("%global.preferences.file%", Constants.LOCATION_GLOBAL_PREFERENCES_FILE);
+                .replaceAll("%global.preferences.file%", Constants.LOCATION_GLOBAL_PREFERENCES_FILE)
+                .replaceAll("%async.profiler.parameters%", asyncProfilerParameters.get().stream().collect(Collectors.joining(" ")));
         Files.asCharSink(profileScript, Charsets.UTF_8).write(profileScriptContent);
     }
 
