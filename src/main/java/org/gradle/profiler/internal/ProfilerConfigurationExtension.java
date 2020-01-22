@@ -16,35 +16,28 @@
 
 package org.gradle.profiler.internal;
 
-import org.gradle.api.Project;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.Property;
 
-import java.util.Arrays;
+import javax.inject.Inject;
 
 public class ProfilerConfigurationExtension {
-
-    private final Property<String> asyncProfilerLocation;
+    // TODO: Would be nice to use managed properties for this, but this is only supported in newer versions of Gradle.
+    private final DirectoryProperty asyncProfilerLocation;
     private final ListProperty<String> asyncProfilerParameters;
 
-    public ProfilerConfigurationExtension(Project project) {
-        asyncProfilerLocation = project.getObjects().property(String.class).convention(System.getProperty("async.profiler.home", System.getProperty("user.home") + "/async-profiler"));
-        asyncProfilerParameters = project.getObjects().listProperty(String.class).convention(Arrays.asList("-e", "cpu", "-i", "5ms"));
+    @Inject
+    public ProfilerConfigurationExtension(ObjectFactory objects) {
+        this.asyncProfilerLocation = objects.directoryProperty();
+        this.asyncProfilerParameters = objects.listProperty(String.class);
     }
 
-    public Property<String> getAsyncProfilerLocation() {
+    public DirectoryProperty getAsyncProfilerLocation() {
         return asyncProfilerLocation;
-    }
-
-    public void asyncProfilerLocation(String location) {
-        asyncProfilerLocation.set(location);
     }
 
     public ListProperty<String> getAsyncProfilerParameters() {
         return asyncProfilerParameters;
-    }
-
-    public void asyncProfilerParameters(String... parameters) {
-        asyncProfilerParameters.set(Arrays.asList(parameters));
     }
 }

@@ -42,14 +42,25 @@ import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
 
-public abstract class SanitizeResultsTask extends DefaultTask {
+public class SanitizeResultsTask extends DefaultTask {
+    private final DirectoryProperty sourceDirectory;
+    private final RegularFileProperty targetFile;
+
+    public SanitizeResultsTask() {
+        this.sourceDirectory = getProject().getObjects().directoryProperty();
+        this.targetFile = getProject().getObjects().fileProperty();
+    }
 
     @InputDirectory
     @SkipWhenEmpty
-    public abstract DirectoryProperty getSourceDirectory();
+    public DirectoryProperty getSourceDirectory() {
+        return sourceDirectory;
+    }
 
     @OutputFile
-    public abstract RegularFileProperty getTargetFile();
+    public RegularFileProperty getTargetFile() {
+        return targetFile;
+    }
 
     private static final Splitter STACKTRACE_SPLITTER = Splitter.on(";").omitEmptyStrings();
     private static final Joiner STACKTRACE_JOINER = Joiner.on(";");

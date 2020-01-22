@@ -21,8 +21,13 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -33,12 +38,37 @@ import java.util.stream.Collectors;
 
 public class EnableProfilingTask extends DefaultTask {
 
-    private Property<String> asyncProfilerLocation;
-    private ListProperty<String> asyncProfilerParameters;
+    private final ListProperty<String> asyncProfilerParameters;
+    private final DirectoryProperty asyncProfilerLocation;
+    private final RegularFileProperty profilingInitScriptFile;
+    private final RegularFileProperty profilingPreferencesFile;
 
-    void apply(ProfilerConfigurationExtension configuration) {
-        asyncProfilerLocation = configuration.getAsyncProfilerLocation();
-        asyncProfilerParameters = configuration.getAsyncProfilerParameters();
+    public EnableProfilingTask() {
+        ObjectFactory objects = getProject().getObjects();
+        this.asyncProfilerParameters = objects.listProperty(String.class);
+        this.asyncProfilerLocation = objects.directoryProperty();
+        this.profilingInitScriptFile = objects.fileProperty();
+        this.profilingPreferencesFile = objects.fileProperty();
+    }
+
+    @InputDirectory
+    public DirectoryProperty getAsyncProfilerLocation() {
+        return asyncProfilerLocation;
+    }
+
+    @Input
+    public ListProperty<String> getAsyncProfilerParameters() {
+        return asyncProfilerParameters;
+    }
+
+    @OutputFile
+    public RegularFileProperty getProfilingInitScriptFile() {
+        return profilingInitScriptFile;
+    }
+
+    @OutputFile
+    public RegularFileProperty getProfilingPreferencesFile() {
+        return profilingPreferencesFile;
     }
 
     @TaskAction
@@ -53,10 +83,12 @@ public class EnableProfilingTask extends DefaultTask {
     }
 
     private void verifyConfiguration() {
-        if (!new File(asyncProfilerLocation.get()).exists()) {
+        File asyncProfilerLocation = getAsyncProfilerLocation().get().getAsFile();
+        File[] contents = asyncProfilerLocation.listFiles();
+        if (contents == null || contents.length == 0) {
             throw new org.gradle.api.InvalidUserCodeException("Async Profiler location not declared.\n\n" +
-                    "Download Async Profiler (https://github.com/jvm-profiling-tools/async-profiler) and place it in the " + asyncProfilerLocation.get() + " directory.\n" +
-                    "Use the following snippet to configure custom installation paths:\n\n" +
+                    "Download Async Profiler (https://github.com/jvm-profiling-tools/async-profiler) and place it in the '" + asyncProfilerLocation + "' directory.\n" +
+                    "Or configure a custom installation path with:\n\n" +
                     "profiler {\n" +
                     "  asyncProfilerLocation = \"/path/to/async/profiler\"\n" +
                     "}");
@@ -64,19 +96,17 @@ public class EnableProfilingTask extends DefaultTask {
     }
 
     private void writeProfileScriptToGradleInit() throws IOException {
-        File profileScript = new File(getProject().getGradle().getGradleUserHomeDir(), Constants.LOCATION_CUSTOM_INIT_SCRIPT);
-        profileScript.getParentFile().mkdirs();
+        File profileScript = getProfilingInitScriptFile().get().getAsFile();
         String profileScriptContent = CharStreams.toString(new InputStreamReader(getClass().getResource("/profiler.gradle").openStream(), Charsets.UTF_8));
         profileScriptContent = profileScriptContent
-                .replaceAll("%async.profiler.location%", asyncProfilerLocation.get())
+                .replaceAll("%async.profiler.location%", getAsyncProfilerLocation().get().getAsFile().getAbsolutePath())
                 .replaceAll("%global.preferences.file%", Constants.LOCATION_GLOBAL_PREFERENCES_FILE)
-                .replaceAll("%async.profiler.parameters%", asyncProfilerParameters.get().stream().collect(Collectors.joining(" ")));
+                .replaceAll("%async.profiler.parameters%", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")));
         Files.asCharSink(profileScript, Charsets.UTF_8).write(profileScriptContent);
     }
 
     private void appendRootLocationToPreferences() throws IOException {
-        File preferences = new File(Constants.LOCATION_GLOBAL_PREFERENCES_FILE);
-        preferences.getParentFile().mkdirs();
+        File preferences = getProfilingPreferencesFile().get().getAsFile();
         String content = preferences.exists() ? CharStreams.toString(new FileReader(preferences)) : "";
         String rootLocation = getProject().getRootProject().getProjectDir().getAbsolutePath();
         if (!content.contains(rootLocation)) {

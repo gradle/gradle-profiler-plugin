@@ -20,8 +20,11 @@ import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.provider.Provider;
 
 import java.io.File;
+import java.util.Arrays;
 
 public class GradleProfilerPlugin implements Plugin<Project> {
 
@@ -31,12 +34,23 @@ public class GradleProfilerPlugin implements Plugin<Project> {
             throw new InvalidUserCodeException("The 'org.gradle.gradle-profiler' plugin should be applied on the root project only");
         }
 
-        ProfilerConfigurationExtension configuration = project.getExtensions().create("profiler", ProfilerConfigurationExtension.class, project);
+        ProfilerConfigurationExtension configuration = project.getExtensions().create("profiler", ProfilerConfigurationExtension.class, project.getObjects());
+        String asyncProfilerHome = System.getProperty("async.profiler.home", System.getProperty("user.home") + "/async-profiler");
+        // TODO: It would be nice to use convention here.
+        configuration.getAsyncProfilerLocation().set(new File(asyncProfilerHome));
+        configuration.getAsyncProfilerParameters().convention(Arrays.asList("-e", "cpu", "-i", "5ms"));
+
         String group = "profiler";
 
         project.getTasks().register("enableProfiling", EnableProfilingTask.class, task -> {
             task.setGroup(group);
-            task.apply(configuration);
+            Provider<RegularFile> initScript = project.getLayout().file(project.provider(() -> new File(project.getGradle().getGradleUserHomeDir(), Constants.LOCATION_CUSTOM_INIT_SCRIPT)));
+            task.getProfilingInitScriptFile().convention(initScript);
+
+            Provider<RegularFile> preferences = project.getLayout().file(project.provider(() -> new File(Constants.LOCATION_GLOBAL_PREFERENCES_FILE)));
+            task.getProfilingPreferencesFile().convention(preferences);
+            task.getAsyncProfilerLocation().convention(configuration.getAsyncProfilerLocation());
+            task.getAsyncProfilerParameters().convention(configuration.getAsyncProfilerParameters());
         });
 
         project.getTasks().register("disableProfiling", DisableProfilingTask.class, task -> {

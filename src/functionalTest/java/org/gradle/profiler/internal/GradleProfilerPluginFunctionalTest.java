@@ -112,7 +112,7 @@ public class GradleProfilerPluginFunctionalTest {
         // setup:
         writeBuildFile("" +
                 "profiler {\n" +
-                "    asyncProfilerParameters '-e', 'mem' \n" +
+                "    asyncProfilerParameters = [ '-e', 'mem' ] \n" +
                 "}\n");
 
         // then:

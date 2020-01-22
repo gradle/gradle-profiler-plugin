@@ -42,7 +42,7 @@ The task will take all `profile-\d+.collapsed` files from the `$rootProject/.gra
 The following configuration options are available for the plugin via the `profiler` extension:
 ```
 profiler {
-    asyncProfilerLocation = /path/to/async-profiler
-    asyncProfilerParameters = '-e', 'mem'
+    asyncProfilerLocation = file("/path/to/async-profiler")
+    asyncProfilerParameters = [ '-e', 'mem' ]
 }
 ```
