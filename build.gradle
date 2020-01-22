@@ -8,20 +8,8 @@ plugins {
 group = 'org.gradle'
 version = '0.0.1'
 
-publishing {
-    repositories {
-        maven {
-            url = uri("${buildDir}/repo")
-        }
-    }
-}
-
 repositories {
     jcenter()
-    maven {
-        name = "external"
-        url = uri("$buildDir/repo")
-    }
 }
 
 dependencies {
@@ -39,7 +27,7 @@ gradlePlugin {
         profiler {
             id = 'org.gradle.gradle-profiler'
             implementationClass = 'org.gradle.profiler.internal.GradleProfilerPlugin'
-            displayName = "Gradle Profiler Plugin (preview version)"
+            displayName = "Gradle Profiler Plugin"
             description = "Profiles Gradle builds with async profiler"
         }
     }
@@ -52,8 +40,7 @@ pluginBundle {
 }
 
 sourceSets {
-    functionalTest {
-    }
+    functionalTest 
 }
 
 gradlePlugin.testSourceSets(sourceSets.functionalTest)
