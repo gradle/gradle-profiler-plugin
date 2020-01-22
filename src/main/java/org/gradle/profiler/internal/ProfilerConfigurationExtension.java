@@ -20,10 +20,7 @@ import org.gradle.api.Project;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class ProfilerConfigurationExtension {
 
@@ -31,7 +28,7 @@ public class ProfilerConfigurationExtension {
     private final ListProperty<String> asyncProfilerParameters;
 
     public ProfilerConfigurationExtension(Project project) {
-        asyncProfilerLocation = project.getObjects().property(String.class).convention(System.getProperty("user.home") + "/async-profiler");
+        asyncProfilerLocation = project.getObjects().property(String.class).convention(System.getProperty("async.profiler.home", System.getProperty("user.home") + "/async-profiler"));
         asyncProfilerParameters = project.getObjects().listProperty(String.class).convention(Arrays.asList("-e", "cpu", "-i", "5ms"));
     }
 
