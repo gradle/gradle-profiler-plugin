@@ -32,7 +32,7 @@ public class ProfilerConfigurationExtension {
 
     public ProfilerConfigurationExtension(Project project) {
         asyncProfilerLocation = project.getObjects().property(String.class).convention(System.getProperty("user.home") + "/async-profiler");
-        asyncProfilerParameters = project.getObjects().listProperty(String.class).convention(Arrays.asList("-e", "cpu"));
+        asyncProfilerParameters = project.getObjects().listProperty(String.class).convention(Arrays.asList("-e", "cpu", "-i", "5ms"));
     }
 
     public Property<String> getAsyncProfilerLocation() {
