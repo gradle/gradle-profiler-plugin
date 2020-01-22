@@ -39,6 +39,8 @@ gradlePlugin {
         profiler {
             id = 'org.gradle.gradle-profiler'
             implementationClass = 'org.gradle.profiler.internal.GradleProfilerPlugin'
+            displayName = "Gradle Profiler Plugin (preview version)"
+            description = "Profiles Gradle builds with async profiler"
         }
     }
 }
