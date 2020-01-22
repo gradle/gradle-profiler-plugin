@@ -19,6 +19,7 @@ package org.gradle.profiler.internal;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 
 import java.io.File;
 
@@ -44,8 +45,9 @@ public class GradleProfilerPlugin implements Plugin<Project> {
 
         project.getTasks().register("sanitizeResults", SanitizeResultsTask.class, task -> {
             task.setGroup(group);
-            task.sourceDir = new File(task.getProject().getRootProject().getRootDir(), Constants.LOCATION_PROFILES);
-            task.target = new File(task.getProject().getRootProject().getRootDir(), Constants.LOCATION_SANITIZED_PROFILE);
+            Directory rootDir = task.getProject().getRootProject().getLayout().getProjectDirectory();
+            task.getSourceDirectory().convention(rootDir.dir(Constants.LOCATION_PROFILES));
+            task.getTargetFile().convention(rootDir.file(Constants.LOCATION_SANITIZED_PROFILE));
         });
     }
 }

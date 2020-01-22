@@ -24,7 +24,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.BufferedWriter;
@@ -37,27 +42,21 @@ import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
 
-public class SanitizeResultsTask extends DefaultTask {
+public abstract class SanitizeResultsTask extends DefaultTask {
 
-    File sourceDir;
+    @InputDirectory
+    @SkipWhenEmpty
+    public abstract DirectoryProperty getSourceDirectory();
 
-    @InputFile
-    public File getSourceDir() {
-        return sourceDir;
-    }
-
-    File target;
-
-    @InputFile
-    public File getTarget() {
-        return target;
-    }
+    @OutputFile
+    public abstract RegularFileProperty getTargetFile();
 
     private static final Splitter STACKTRACE_SPLITTER = Splitter.on(";").omitEmptyStrings();
     private static final Joiner STACKTRACE_JOINER = Joiner.on(";");
 
     @TaskAction
     public void sanitize() {
+        File sourceDir = getSourceDirectory().get().getAsFile();
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             getProject().getLogger().warn("Profiling directory does not exist: " + sourceDir.getAbsolutePath());
             return;
@@ -70,9 +69,8 @@ public class SanitizeResultsTask extends DefaultTask {
         }
 
         SanitizeFunction sanitizeFunction = createSanitizeFunction();
-        target.getParentFile().mkdirs();
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(target))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getTargetFile().get().getAsFile()))) {
             for (File source : profiles) {
                 for (String line : Files.asCharSource(source, Charsets.UTF_8).readLines()) {
                     int endOfStack = line.lastIndexOf(" ");
