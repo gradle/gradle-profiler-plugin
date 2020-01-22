@@ -17,6 +17,7 @@
 package org.gradle.profiler.internal;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.gradle.testkit.runner.BuildResult;
@@ -24,12 +25,16 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -39,6 +44,9 @@ public class GradleProfilerPluginFunctionalTest {
 
     @TempDir
     File projectDir;
+
+    @TempDir
+    File gradleUserHome;
 
     @BeforeEach
     public void setUp() throws IOException {
@@ -116,6 +124,19 @@ public class GradleProfilerPluginFunctionalTest {
         assertOutputContains(result, "profiler.sh start -e mem");
     }
 
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void show_warning_for_missing_linux_configuration() {
+        // setup:
+        runTask("enableProfiling");
+
+        // when:
+        BuildResult result = runTask("help");
+
+        // then:
+        assertOutputContains(result, "Async profiler won't capture perf_events.");
+    }
+
     private void writeBuildFile(String content) throws IOException {
         writeProjectFile("build.gradle", content);
     }
@@ -132,7 +153,7 @@ public class GradleProfilerPluginFunctionalTest {
         return GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(arguments)
+                .withArguments(withGradleUserHome(arguments))
                 .withProjectDir(projectDir)
                 .build();
     }
@@ -141,10 +162,14 @@ public class GradleProfilerPluginFunctionalTest {
         return GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(arguments)
+                .withArguments(withGradleUserHome(arguments))
                 .withProjectDir(projectDir)
                 .withGradleVersion(version)
                 .build();
+    }
+
+    private List<String> withGradleUserHome(String... arguments) {
+        return ImmutableList.<String>builder().addAll(Arrays.asList(arguments)).add("--gradle-user-home").add(gradleUserHome.getAbsolutePath()).build();
     }
 
     private static Stream<String> getTestedGradleVersions() {

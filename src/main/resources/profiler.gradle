@@ -27,6 +27,7 @@ if (preferencesFile.exists()) {
                 logger.info "[Profiler] Preferences file: $preferencesFile"
                 logger.info "[Profiler] Start command: $startCommand"
                 logger.info "[Profiler] Start command output: $startOutput"
+                verifyLinuxPerfEvents(logger)
                 logger.lifecycle "[Profiler] Started profiling process $pid."
             }
 
@@ -51,6 +52,20 @@ if (preferencesFile.exists()) {
                     "$asyncProfilerScript stop $pid".execute()
                 }
             }
+        }
+    }
+}
+
+def verifyLinuxPerfEvents(def logger) {
+    // https://github.com/jvm-profiling-tools/async-profiler#basic-usage
+    if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
+        def perfEventParanoid = new File('/proc/sys/kernel/perf_event_paranoid').text
+        def kptrRestrict = new File('/proc/sys/kernel/kptr_restrict').text
+        if (perfEventParanoid != '1' || kptrRestrict != '0') {
+            logger.warn('[Profiler] Async profiler won\'t capture perf_events.\n' +
+                    'To fix that, execute the following commands:\n' +
+                    'echo 1 > /proc/sys/kernel/perf_event_paranoid\n' +
+                    'echo 0 > /proc/sys/kernel/kptr_restrict')
         }
     }
 }
