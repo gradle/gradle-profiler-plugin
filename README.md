@@ -13,7 +13,7 @@ Please use it with caution and do profiling on one project at a time.
         id 'org.gradle.gradle-profiler' version '0.0.1'
     }
   
-The plugin requires async-profiler to be present in the `{user.home}/async-profiler` directory.
+The plugin requires async-profiler to be installed in the `{user.home}/async-profiler` directory or in the [configured](#configuration) location.
     
 Note: the plugin is not yet released to the plugin portal.
 Right now if you want to use this plugin you need to clone the project and add the following statement to your settings file:
