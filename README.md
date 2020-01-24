@@ -2,6 +2,9 @@
 
 Gradle plugin profiling the Gradle build process with [async-profiler](https://github.com/jvm-profiling-tools/async-profiler). 
 
+**Warning** This plugin is an early prototype (hence the 0. version number). 
+Please use it with caution and do profiling on one project at a time.
+
 ## Getting started
 
 #### Applying the plugin
@@ -46,3 +49,12 @@ profiler {
     asyncProfilerParameters = [ '-e', 'mem' ]
 }
 ```
+
+## FAQ
+
+#### I applied this plugin on one of my projects and now I can't execute _any_ builds
+
+In order to start the profiler as early as possible within Gradle, the profiler plugin places a script in the Gradle user home (i.e. to the `.gradle` in your user home).
+That script might be broken for some unforeseen reason.
+Delete the `${gradleUserHome}/init.d/profiling.gradle` file and your builds should go back to normal.
+Also, please open a bug report on the problem.
