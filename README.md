@@ -7,7 +7,7 @@ Please use it with caution and do profiling on one project at a time.
 
 ## Getting started
 
-#### Applying the plugin
+#### Apply the plugin
 
     plugins {
         id 'org.gradle.gradle-profiler' version '0.0.1'
@@ -27,7 +27,7 @@ The file can be opened with IntelliJ Ultimate: Menu > Run > Open Profiler Snapsh
 
     ./gradlew disableProfiling
     
-#### Sanitizing the results
+#### Sanitize the results
 
     ./gradlew sanitizeResults
     
