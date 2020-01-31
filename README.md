@@ -12,8 +12,6 @@ Please use it with caution and do profiling on one project at a time.
     plugins {
         id 'org.gradle.gradle-profiler' version '0.0.1'
     }
-  
-The plugin requires async-profiler to be installed in the `{user.home}/async-profiler` directory or in the [configured](#configuration) location.
     
 #### Enable profiling
 
@@ -53,3 +51,7 @@ In order to start the profiler as early as possible within Gradle, the profiler 
 That script might be broken for some unforeseen reason.
 Delete the `${gradleUserHome}/init.d/profiling.gradle` file and your builds should go back to normal.
 Also, please open a bug report on the problem.
+
+#### "(jattach|libasyncProfiler.so)" cannot be opened because the developers cannot be verified.
+
+Upon first usage, macOS might complain about binaries from unknown sources. You can [work around that in the preferences](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
