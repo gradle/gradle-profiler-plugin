@@ -1,3 +1,5 @@
+long diff = System.nanoTime()
+
 String asyncProfilerHome = '%async.profiler.location%'
 String asyncProfilerScript = "$asyncProfilerHome/profiler.sh"
 File preferencesFile = new File('%global.preferences.file%')
@@ -33,6 +35,9 @@ if (preferencesFile.exists()) {
 
             // stop the profiling when the build finishes
             gradle.buildFinished {
+                diff = System.nanoTime() - diff
+                diff = (long) (diff / 1000000)
+
                 def profilesDir = new File(gradle.rootProject.projectDir, '.gradle-profiles')
                 profilesDir.mkdirs()
                 int i = 1
@@ -47,6 +52,7 @@ if (preferencesFile.exists()) {
                     def logger = gradle.rootProject.logger
                     logger.info "[Profiler] Stop command: $stopCommand"
                     logger.info "[Profiler] Stop command output: $stopCommandOutput"
+                    logger.lifecycle "[Profiler] Gradle finished in $diff milliseconds"
                     logger.lifecycle "[Profiler] Finished profiling process $pid. Results saved at ${profileFile.absolutePath}."
                 } else {
                     "$asyncProfilerScript stop $pid".execute()

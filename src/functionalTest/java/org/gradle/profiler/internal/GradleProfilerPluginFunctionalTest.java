@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,6 +138,16 @@ public class GradleProfilerPluginFunctionalTest {
         assertOutputContains(result, "Async profiler won't capture perf_events.");
     }
 
+    @Test
+    public void show_elapsed_time() {
+        // setup:
+        runTask("enableProfiling");
+        BuildResult result = runTask("help");
+
+        // then:
+        assertOutputMatches(result, "Gradle finished in \\d+ milliseconds");
+    }
+
     private void writeBuildFile(String content) throws IOException {
         writeProjectFile("build.gradle", content);
     }
@@ -178,6 +189,11 @@ public class GradleProfilerPluginFunctionalTest {
 
     private static void assertOutputContains(BuildResult result, String s) {
         assertTrue(result.getOutput().contains(s));
+    }
+
+    private static void assertOutputMatches(BuildResult result, String s) {
+        Pattern pattern = Pattern.compile("^.*" + s + ".*$", Pattern.MULTILINE | Pattern.DOTALL);
+        assertTrue(pattern.matcher(result.getOutput()).matches());
     }
 
     private static void assertOutputNotContains(BuildResult result, String s) {
