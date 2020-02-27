@@ -7,15 +7,24 @@ Please use it with caution and do profiling on one project at a time.
 
 ## Getting started
 
-#### Apply the plugin
+#### Apply the plugin in the root project
 
     plugins {
         id 'org.gradle.gradle-profiler' version '0.0.1'
     }
-    
+
+If the legacy plugin mechanism is used, use the following instead:
+
+    buildscript {
+        dependencies {
+            classpath 'org.gradle.profiler:gradle-profiler-plugin:0.0.1'
+        }
+    }
+    apply plugin: 'org.gradle.gradle-profiler'
+
 #### Enable profiling
 
-    ./gradlew enableProfiling
+    ./gradlew :enableProfiling
 
 After executing the task, each subsequent Gradle invocations will generate a [`.collapsed`](https://github.com/brendangregg/FlameGraph) file in the `$rootProject/.gradle-profiles` folder.
 The profiling starts when Gradle executes the scripts in the `.init.d` folder and finishes in a `gradle.buildFinished` hook. 
@@ -23,13 +32,13 @@ The file can be opened with IntelliJ Ultimate: Menu > Run > Open Profiler Snapsh
 
 #### Disable profiling
 
-    ./gradlew disableProfiling
+    ./gradlew :disableProfiling
     
 #### Sanitize the results
 
-    ./gradlew sanitizeResults
+    ./gradlew :sanitizeResults
     
-The task will take all `profile-\d+.collapsed` files from the `$rootProject/.gradle-profiles` folder merges it into a single file and cleans up the content.
+The task will take all `profile-\d+.collapsed` files in the `$rootProject/.gradle-profiles` folder, merges it into a single file, cleans up its content and writes it in the same folder.
  The cleanup consists of removing duplicate frames, replacing groovy-related frames with `dynamic invocation` entries and more. 
  For the details, check the `SanitizeResultsTask` implementation.
 
@@ -38,7 +47,7 @@ The task will take all `profile-\d+.collapsed` files from the `$rootProject/.gra
 The following configuration options are available for the plugin via the `profiler` extension:
 ```
 profiler {
-    asyncProfilerLocation = file("/path/to/async-profiler")
+    asyncProfilerLocation = file('/path/to/async-profiler')
     asyncProfilerParameters = [ '-e', 'mem' ]
 }
 ```
@@ -55,3 +64,13 @@ Also, please open a bug report on the problem.
 #### "(jattach|libasyncProfiler.so)" cannot be opened because the developers cannot be verified.
 
 Upon first usage, macOS might complain about binaries from unknown sources. You can [work around that in the preferences](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac).
+
+#### My output mentions `frame_buffer_overflow`
+
+You might need to add
+```
+profiler {
+    asyncProfilerParameters = [ '-b', '5000000' ]
+}
+```
+or another suitably large number. See [async-profiler troubleshooting](https://github.com/jvm-profiling-tools/async-profiler#troubleshooting) for more information.
