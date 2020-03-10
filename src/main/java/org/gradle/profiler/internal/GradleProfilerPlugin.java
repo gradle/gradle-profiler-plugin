@@ -38,7 +38,7 @@ public class GradleProfilerPlugin implements Plugin<Project> {
         String asyncProfilerHome = System.getProperty("async.profiler.home", System.getProperty("user.home") + "/async-profiler");
         // TODO: It would be nice to use convention here.
         configuration.getAsyncProfilerLocation().set(new File(asyncProfilerHome));
-        configuration.getAsyncProfilerParameters().convention(Arrays.asList("-e", "cpu", "-i", "10ms"));
+        configuration.getAsyncProfilerParameters().convention(Arrays.asList("-e", "cpu", "-i", "10ms", "-e", "wall", "-t"));
 
         String group = "profiler";
 

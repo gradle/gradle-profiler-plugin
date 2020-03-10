@@ -1,12 +1,13 @@
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
+    id 'java-library'
     id 'java-gradle-plugin'
     id 'maven-publish'
     id 'com.gradle.plugin-publish' version '0.10.1'
 }
 
 group = 'org.gradle.profiler'
-version = '0.0.2'
+version = '0.0.3'
 
 repositories {
     jcenter()
@@ -14,12 +15,33 @@ repositories {
 
 dependencies {
     implementation 'com.google.guava:guava:27.1-jre'
+    implementation 'net.bytebuddy:byte-buddy:1.7.9'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0'
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+sourceSets {
+    functionalTest
+}
+
+gradlePlugin.testSourceSets(sourceSets.functionalTest)
+configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+
+task functionalTest(type: Test) {
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+check {
+    dependsOn(tasks.functionalTest)
 }
 
 gradlePlugin {
@@ -39,22 +61,13 @@ pluginBundle {
     tags = ['gradle', 'profiler', 'async-profiler']
 }
 
-sourceSets {
-    functionalTest 
-}
+// the produced jar file can be attached to idea as a java agent
+jar {
+    manifest {
+        attributes('Premain-Class': 'org.gradle.profiler.internal.IdeaProfilerAgent')
+    }
 
-gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
-
-task functionalTest(type: Test) {
-    testClassesDirs = sourceSets.functionalTest.output.classesDirs
-    classpath = sourceSets.functionalTest.runtimeClasspath
-}
-
-tasks.withType(Test) {
-    useJUnitPlatform()
-}
-
-check {
-    dependsOn(tasks.functionalTest)
+    from {
+        configurations.runtimeClasspath.findAll { it.path.endsWith('byte-buddy-1.7.9.jar') }.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }

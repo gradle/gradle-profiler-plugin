@@ -30,7 +30,7 @@ if (preferencesFile.exists()) {
                 logger.info "[Profiler] Start command: $startCommand"
                 logger.info "[Profiler] Start command output: $startOutput"
                 verifyLinuxPerfEvents(logger)
-                logger.lifecycle "[Profiler] Started profiling process $pid."
+                logger.lifecycle "[Profiler] Started profiling Gradle (pid=$pid)"
             }
 
             // stop the profiling when the build finishes
@@ -38,22 +38,25 @@ if (preferencesFile.exists()) {
                 diff = System.nanoTime() - diff
                 diff = (long) (diff / 1000000)
 
-                def profilesDir = new File(gradle.rootProject.projectDir, '.gradle-profiles')
+                def profilesDir = new File('/tmp/profiles')
                 profilesDir.mkdirs()
                 int i = 1
                 File profileFile
-                while ((profileFile = new File(profilesDir, "profile-${i}.collapsed")).exists()) {
+                while ((profileFile = new File(profilesDir, "gradle-profile-${i}.collapsed")).exists()) {
                     i++
                 }
 
                 if (shouldSaveProfiling) {
                     def stopCommand = "$asyncProfilerScript stop -f ${profileFile.absolutePath} $pid"
+                    def detailsFile = new File(profilesDir, "gradle-profile-" + i + ".details")
+                    detailsFile.text = "Gradle finished in $diff milliseconds\n" +
+                            "pid: $pid\n";
+
                     def stopCommandOutput =  stopCommand.execute()
                     def logger = gradle.rootProject.logger
                     logger.info "[Profiler] Stop command: $stopCommand"
                     logger.info "[Profiler] Stop command output: $stopCommandOutput"
-                    logger.lifecycle "[Profiler] Gradle finished in $diff milliseconds"
-                    logger.lifecycle "[Profiler] Finished profiling process $pid. Results saved at ${profileFile.absolutePath}."
+                    logger.lifecycle "[Profiler] Finished profiling Gradle (pid=$pid). Execution took $diff milliseconds. Results saved at ${profileFile.absolutePath}."
                 } else {
                     "$asyncProfilerScript stop $pid".execute()
                 }

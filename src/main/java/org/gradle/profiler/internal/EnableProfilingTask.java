@@ -30,10 +30,13 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.stream.Collectors;
 
 public class EnableProfilingTask extends DefaultTask {
@@ -77,6 +80,7 @@ public class EnableProfilingTask extends DefaultTask {
         try {
             writeProfileScriptToGradleInit();
             appendRootLocationToPreferences();
+            checkRunningIdea();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -113,4 +117,53 @@ public class EnableProfilingTask extends DefaultTask {
             Files.asCharSink(preferences, Charsets.UTF_8, FileWriteMode.APPEND).write(Constants.LINE_SEPARATOR + rootLocation);
         }
     }
+
+    private void checkRunningIdea() {
+        String ideaProcessLine = findIdeaProcess();
+        if (ideaProcessLine == null) {
+            getProject().getLogger().lifecycle("[Profiler] IntelliJ IDEA not running");
+        } else {
+            String jarLocation = getJavaAgentConfiguration();
+            int idx = jarLocation.lastIndexOf(System.getProperty("file.separator"));
+            String jarName = jarLocation.substring(idx);
+            String agentConfig = "-javaagent:" + jarLocation;
+            if (!ideaProcessLine.contains(jarName)) {
+                getProject().getLogger().lifecycle("[Profiler] IntelliJ IDEA is running without a profiler agent. You can install it with the following steps.\n" +
+                                                   "             - Open Menu > Help > Edit Custom VM Options\n" +
+                                                   "             - At the end file add the following entry: " + agentConfig + "\n" +
+                                                   "             - Restart IDEA\n" +
+                                                   "           (Note: this only works with IntelliJ IDEA Community Edition)");
+            }
+        }
+    }
+
+    private String getJavaAgentConfiguration() {
+        try {
+            ProtectionDomain domain = getClass().getProtectionDomain();
+            CodeSource source = domain.getCodeSource();
+            return source.getLocation().toString().replace("file:", "");
+        } catch (Exception e) {
+            return "/path/to/gradle-profiler-plugin.jar";
+        }
+    }
+
+    public static String findIdeaProcess() {
+        String process = null;
+        try {
+            String line;
+            Process p = Runtime.getRuntime().exec("jps -v");
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((line = input.readLine()) != null) {
+                if (line.trim().contains("idea.home.path")) {
+                    process = line;
+                    break;
+                }
+            }
+            input.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return process;
+      }
 }
