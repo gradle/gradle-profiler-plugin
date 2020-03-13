@@ -14,7 +14,8 @@ public class IdeaProfilerAgent {
     public static void premain(String arguments, Instrumentation instrumentation) {
 
         try {
-            IdeaProfilerLogger.log("Gradle sync time profiler loaded");
+            IdeaProfilerLogger.log("IntelliJ idea started with Gradle sync time profiler");
+            IdeaProfilerLogger.log("To profile the Gradle daemon, append the following entry to the JVM arguments: -Dgradle.profiler=enabled. You can do that by adding the following entry to the gradle.properies file: `org.org.gradle.jvmargs=-Dgradle.profiler.enabled");
             new IdeaProfilerThread().start();
 
             new AgentBuilder.Default()
