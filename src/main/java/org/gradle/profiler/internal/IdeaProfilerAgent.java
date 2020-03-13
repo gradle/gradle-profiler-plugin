@@ -6,9 +6,6 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.instrument.Instrumentation;
 
-/**
- * This is an agent for get execution time of all running methods
- */
 public class IdeaProfilerAgent {
 
     public static void premain(String arguments, Instrumentation instrumentation) {
