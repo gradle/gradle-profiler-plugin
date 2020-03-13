@@ -12,32 +12,28 @@ public class IdeaProfilerAgentTimerAdvice {
     public static long start = 0;
 
     @Advice.OnMethodEnter
-    static void enter(@Advice.Origin String method, @FieldValue("myTitle") String myTitle) throws Exception {
+    static void enter(@Advice.Origin String method) throws Exception {
         System.out.println("debug_method_start=" + method);
 
-        if (isGradleSyncInProgress(myTitle) && method.contains("start")) {
+        if (method.contains("syncStarted")) {
             start = System.nanoTime();
             int pid = getCurrentPid();
 
             if (pid > 0) {
                 System.out.println("current pid=" + pid);
                 // TODO save profiler arguments in preferences file and load it from there
-                new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "start", "-e", "cpu", "-i", "10ms", "-e", "wall", "-t", String.valueOf(pid)).start();
+                new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "start", "-e", "cpu", "-i", "10ms", "-t", String.valueOf(pid)).start();
                 
             }
             System.out.println("profile_start=" + method);
         }
     }
 
-    public static boolean isGradleSyncInProgress(String title) {
-        return title != null && title.contains("Importing") && title.contains("Gradle project");
-    }
-
     @Advice.OnMethodExit
-    static void exit(@Advice.Origin String method, @FieldValue("myTitle") String myTitle) throws Exception {
+    static void exit(@Advice.Origin String method) throws Exception {
         System.out.println("debug_method_finish=" + method);
 
-        if (isGradleSyncInProgress(myTitle) && method.contains("stop") && start > 0) {
+        if (method.contains("syncFinished") && start > 0) {
             long now = System.nanoTime();
             long diff = (now - start) / 1000000;
             start = 0;
