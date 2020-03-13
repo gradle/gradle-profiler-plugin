@@ -1,11 +1,10 @@
 package org.gradle.profiler.internal;
 
+import net.bytebuddy.asm.Advice;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-
-import net.bytebuddy.asm.Advice;
-import net.bytebuddy.asm.Advice.FieldValue;
 
 public class IdeaProfilerAgentTimerAdvice {
 
@@ -17,7 +16,7 @@ public class IdeaProfilerAgentTimerAdvice {
 
         if (method.contains("syncStarted")) {
             start = System.nanoTime();
-            int pid = getCurrentPid();
+            int pid = OsUtils.getCurrentPid();
 
             if (pid > 0) {
                 System.out.println("current pid=" + pid);
@@ -47,16 +46,15 @@ public class IdeaProfilerAgentTimerAdvice {
                 i++;
             }
 
-            int pid = getCurrentPid();
+            int pid = OsUtils.getCurrentPid();
             if (pid > 0) {
                 File profileFile = new File(profilesDir, "idea-profile-" + i + ".collapsed");
                 Process profilerStopProcess = new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
                 profilerStopProcess.waitFor();
             }
 
-            String simpleName = simpleName(method);
             String details = "Idea finished in " + diff + " milliseconds\n" +
-                    "pid: " + getCurrentPid() + "\n";
+                    "pid: " + pid + "\n";
 
             BufferedWriter writer = null;
             try {
@@ -74,30 +72,5 @@ public class IdeaProfilerAgentTimerAdvice {
                 }
             }
         }
-    }
-
-    public static int getCurrentPid() {
-        try {
-            // Workaround to obtain the PID. The ProcessHandle class is available since Java 9 only
-            java.lang.management.RuntimeMXBean runtime = java.lang.management.ManagementFactory.getRuntimeMXBean();
-            java.lang.reflect.Field jvm = runtime.getClass().getDeclaredField("jvm");
-            jvm.setAccessible(true);
-            sun.management.VMManagement mgmt = (sun.management.VMManagement) jvm.get(runtime);
-            java.lang.reflect.Method pid_method = mgmt.getClass().getDeclaredMethod("getProcessId");
-            pid_method.setAccessible(true);
-
-            return (Integer) pid_method.invoke(mgmt);
-        } catch (Exception e) {
-            return -1;
-        }
-    }
-
-    public static String simpleName(String method) {
-        method = method.substring(0, method.indexOf("("));
-        int lastDot =  method.lastIndexOf(".");
-        String methodName = method.substring(lastDot + 1, method.length());
-        String classFqName = method.substring(0, lastDot);
-        String className = classFqName.substring(classFqName.lastIndexOf(".") + 1, classFqName.length());
-        return className + "." + methodName;
     }
 }
