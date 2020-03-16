@@ -25,14 +25,14 @@ public class AndroidStudioSyncTimerAdvice {
     @Advice.OnMethodEnter
     static void enter(@Advice.Origin String method) {
         if (method.contains(SYNC_START_METHOD_NAME)) {
-            IdeaSync.syncStarted();
+            IdeaSync.getInstance().syncStarted();
         }
     }
 
     @Advice.OnMethodExit
     static void exit(@Advice.Origin String method) {
         if (method.contains(SYNC_STOP_METHOD_NAME)) {
-            IdeaSync.syncFinished();
+            IdeaSync.getInstance().syncFinished();
         }
     }
 }

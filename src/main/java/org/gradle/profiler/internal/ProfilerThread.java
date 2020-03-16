@@ -11,10 +11,10 @@ public class ProfilerThread extends Thread {
             try {
                 if (!syncAlreadyDetected && isIntelliJSyncInProgress()) {
                     syncAlreadyDetected = true;
-                    IdeaSync.syncStarted();
+                    IdeaSync.getInstance().syncStarted();
                 } else if (syncAlreadyDetected && !isIntelliJSyncInProgress()) {
                     syncAlreadyDetected = false;
-                    IdeaSync.syncFinished();
+                    IdeaSync.getInstance().syncFinished();
                 }
 
                 if (syncAlreadyDetected && daemonPid == -1) {

@@ -8,12 +8,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IdeaSync {
 
-    private static int pid;
-    private static long syncStartTime = 0;
+    private static final IdeaSync INSTANCE = new IdeaSync();
+    private final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
+    private int pid;
+    private long syncStartTime = 0;
 
-    private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
+    public static IdeaSync getInstance() {
+        return INSTANCE;
+    }
 
-    public static void init() {
+    public void init() {
         pid = ProcessUtils.getCurrentPid();
         if (pid <= 0) {
             IdeaProfilerLogger.log("ERROR cannot determine IDEA process ID");
@@ -25,7 +29,7 @@ public class IdeaSync {
         }
     }
 
-    public static void syncStarted() {
+    public void syncStarted() {
         if (!alreadyStarted.compareAndSet(false, true)) {
             return;
         }
@@ -38,7 +42,7 @@ public class IdeaSync {
         IdeaProfilerLogger.log("Gradle sync started");
     }
 
-    public static void syncFinished() {
+    public void syncFinished() {
         if (!alreadyStarted.compareAndSet(true, false)) {
             IdeaProfilerLogger.log("WARN sync already finished");
             return;
