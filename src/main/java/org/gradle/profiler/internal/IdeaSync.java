@@ -9,15 +9,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class IdeaSync {
 
     private static int pid;
-    private static long intelliJSyncStartTime = 0;
+    private static long syncStartTime = 0;
 
     private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
 
     public static void init() {
-        pid = OsUtils.getCurrentPid();
+        pid = ProcessUtils.getCurrentPid();
         if (pid <= 0) {
             IdeaProfilerLogger.log("ERROR cannot determine IDEA process ID");
-            System.exit(1);
         } else {
             File asyncProfiler = new File(System.getProperty("user.home") + "/async-profiler/profiler.sh");
             if (!asyncProfiler.exists()) {
@@ -28,7 +27,6 @@ public class IdeaSync {
 
     public static void syncStarted() {
         if (!alreadyStarted.compareAndSet(false, true)) {
-            IdeaProfilerLogger.log("WARN sync already started");
             return;
         }
 
@@ -47,8 +45,8 @@ public class IdeaSync {
         }
 
         long now = System.nanoTime();
-        long diff = (now - intelliJSyncStartTime) / 1000000;
-        intelliJSyncStartTime = 0;
+        long diff = (now - syncStartTime) / 1000000;
+        syncStartTime = 0;
 
         File profilesDir = new File("/tmp/profiles");
         profilesDir.mkdirs();
@@ -58,7 +56,7 @@ public class IdeaSync {
             i++;
         }
 
-        int pid = OsUtils.getCurrentPid();
+        int pid = ProcessUtils.getCurrentPid();
         if (pid > 0) {
             File profileFile = new File(profilesDir, "idea-profile-" + i + ".collapsed");
             Process profilerStopProcess = null;

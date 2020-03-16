@@ -18,12 +18,19 @@ public final class IdeaProfilerLogger {
             out = new PrintStream(new FileOutputStream(profilerLogPath));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            System.exit(1);
         }
     }
 
     public static void log(String message) {
-        out.println(String.format("%s %s", dateFormat.format(LocalDateTime.now()), message));
+        synchronized (out) {
+            out.println(String.format("%s %s", dateFormat.format(LocalDateTime.now()), message));
+        }
+    }
+
+    public static void log(Exception e) {
+        synchronized (out) {
+            e.printStackTrace(out);
+        }
     }
 
     public static void close() {

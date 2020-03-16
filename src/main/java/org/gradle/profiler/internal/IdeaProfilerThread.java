@@ -6,6 +6,9 @@ public class IdeaProfilerThread extends Thread {
 
     @Override
     public void run() {
+        // TODO delete
+        int gP = ProcessUtils.findGradleProcess();
+        System.out.println("gradle daemon PID: " + gP);
         while (true) {
             try {
                 if (!syncAlreadyDetected && isIntelliJSyncInProgress()) {
@@ -15,14 +18,20 @@ public class IdeaProfilerThread extends Thread {
                     syncAlreadyDetected = false;
                     IdeaSync.syncFinished();
                 }
+
+
+
                 Thread.sleep(200);
             } catch (Exception e) {
-                e.printStackTrace();
+
+                IdeaProfilerLogger.log("IntelliJ Platform sync time profiler stopped");
+                IdeaProfilerLogger.log(e);
                 if (e instanceof InterruptedException) {
                     break;
                 }
             }
         }
+        IdeaProfilerLogger.close();
     }
 
     public static boolean isIntelliJSyncInProgress() {
