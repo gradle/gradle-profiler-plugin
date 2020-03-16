@@ -3,6 +3,7 @@ long diff = System.nanoTime()
 String asyncProfilerHome = '%async.profiler.location%'
 String asyncProfilerScript = "$asyncProfilerHome/profiler.sh"
 File preferencesFile = new File('%global.preferences.file%')
+File profilesDir = new File('%profiles.dir%')
 
 if (preferencesFile.exists()) {
     // Workaround to obtain the PID. The ProcessHandle class is available since Java 9 only
@@ -21,8 +22,8 @@ if (preferencesFile.exists()) {
 
     // printing the output in `projectEvaluated` as in here as we have access to the root project here
     gradle.projectsEvaluated {
-        if (preferencesFile.exists() && preferencesFile.text.contains(gradle.rootProject.projectDir.absolutePath)) {
-            def shouldSaveProfiling = !gradle.startParameter.taskNames.find { it.contains('disableProfiling') }
+        if (preferencesFile.exists()) {
+            def shouldSaveProfiling = !gradle.startParameter.taskNames.find { it.contains('disableProfiling') } && !gradle.rootProject.projectDir.absolutePath.contains('gradle-profiler-plugin')
 
             if (shouldSaveProfiling) {
                 def logger = gradle.rootProject.logger
@@ -38,7 +39,6 @@ if (preferencesFile.exists()) {
                 diff = System.nanoTime() - diff
                 diff = (long) (diff / 1000000)
 
-                def profilesDir = new File('/tmp/profiles')
                 profilesDir.mkdirs()
                 int i = 1
                 File profileFile

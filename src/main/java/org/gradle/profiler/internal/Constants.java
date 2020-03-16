@@ -21,7 +21,6 @@ public final class Constants {
     private Constants() {
     }
 
-    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
     public static final String LOCATION_GLOBAL_PREFERENCES_FILE = System.getProperty("user.home") +  "/.gradle-sync-profiling";
     public static final String LOCATION_CUSTOM_INIT_SCRIPT = "init.d/profiling.gradle";
     public static final String LOCATION_PROFILES = ".gradle-profiles";

@@ -17,6 +17,7 @@
 package org.gradle.profiler.internal;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.io.CharStreams;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
@@ -31,12 +32,10 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.Properties;
+import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 public class EnableProfilingTask extends DefaultTask {
@@ -79,7 +78,7 @@ public class EnableProfilingTask extends DefaultTask {
         verifyConfiguration();
         try {
             writeProfileScriptToGradleInit();
-            appendRootLocationToPreferences();
+            writePreferences();
             checkRunningIdea();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -105,17 +104,18 @@ public class EnableProfilingTask extends DefaultTask {
         profileScriptContent = profileScriptContent
                 .replaceAll("%async.profiler.location%", getAsyncProfilerLocation().get().getAsFile().getAbsolutePath())
                 .replaceAll("%global.preferences.file%", Constants.LOCATION_GLOBAL_PREFERENCES_FILE)
-                .replaceAll("%async.profiler.parameters%", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")));
+                .replaceAll("%async.profiler.parameters%", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")))
+                .replaceAll("%profiles.dir%", new File(getProject().getLayout().getProjectDirectory().getAsFile(), ".profiles").getAbsolutePath());
         Files.asCharSink(profileScript, Charsets.UTF_8).write(profileScriptContent);
     }
 
-    private void appendRootLocationToPreferences() throws IOException {
-        File preferences = getProfilingPreferencesFile().get().getAsFile();
-        String content = preferences.exists() ? CharStreams.toString(new FileReader(preferences)) : "";
-        String rootLocation = getProject().getRootProject().getProjectDir().getAbsolutePath();
-        if (!content.contains(rootLocation)) {
-            Files.asCharSink(preferences, Charsets.UTF_8, FileWriteMode.APPEND).write(Constants.LINE_SEPARATOR + rootLocation);
-        }
+    private void writePreferences() throws IOException {
+        // we persist the preferences to have the same configuration for the IDEA profiling
+        Properties prefs = new Properties();
+        prefs.put("async.profiler.location", getAsyncProfilerLocation().get().getAsFile().getAbsolutePath());
+        prefs.put("async.profiler.parameters", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")));
+        prefs.put("profiles.dir", new File(getProject().getLayout().getProjectDirectory().getAsFile(), ".profiles").getAbsolutePath());
+        prefs.store(new FileOutputStream(Constants.LOCATION_GLOBAL_PREFERENCES_FILE), "");
     }
 
     private void checkRunningIdea() {

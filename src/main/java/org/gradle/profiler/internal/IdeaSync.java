@@ -1,28 +1,92 @@
 package org.gradle.profiler.internal;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IdeaSync {
 
     private static final IdeaSync INSTANCE = new IdeaSync();
-    private final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
-    private long syncStartTime = 0;
     private final int pid = ProcessUtils.getCurrentPid();
+    private final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
+
+    private long syncStartTime = 0;
+    private String asyncProfilerPath = null;
+    private List<String> asyncProfilerParameters = null;
+    private String profilesDir = null;
 
     public static IdeaSync getInstance() {
         return INSTANCE;
+    }
+
+    public void setAsyncProfilerPath(String asyncProfilerPath) {
+        this.asyncProfilerPath = asyncProfilerPath;
+    }
+
+    public void setAsyncProfilerParameters(List<String> asynchPofilerParameters) {
+        this.asyncProfilerParameters = asynchPofilerParameters;
+    }
+
+    public void setProfilesDir(String profilesDir) {
+        this.profilesDir = profilesDir;
+    }
+
+    private boolean readPreferences() {
+        File prefsFile = new File(Constants.LOCATION_GLOBAL_PREFERENCES_FILE);
+        if (!prefsFile.exists()) {
+            IdeaProfilerLogger.log("Profiling not enabled");
+            return false;
+        }
+
+        Properties prefs = new Properties();
+        try {
+            prefs.load(new FileInputStream(prefsFile));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        String asyncProfilerPath = (String) prefs.get("async.profiler.location");
+        if (asyncProfilerPath == null) {
+            IdeaProfilerLogger.log("Cannot read async profiler location");
+            return false;
+        }
+
+        Object params = prefs.get("async.profiler.parameters");
+        if (params == null) {
+            IdeaProfilerLogger.log("Cannot read async profiler parameters");
+            return false;
+        }
+
+        String profilesDir = (String) prefs.get("profiles.dir");
+        if (profilesDir == null) {
+            IdeaProfilerLogger.log("Cannot read profiles dir");
+            return false;
+        }
+
+        List<String> asyncProfilerParameters = Arrays.asList(((String)params).split(" "));
+        setAsyncProfilerPath(asyncProfilerPath + "/profiler.sh");
+        setAsyncProfilerParameters(asyncProfilerParameters);
+        setProfilesDir(profilesDir);
+        return true;
     }
 
     public void syncStarted() {
         if (!alreadyStarted.compareAndSet(false, true)) {
             return;
         }
+
         try {
-            new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "start", "-e", "cpu", "-i", "10ms", "-t", String.valueOf(pid)).start();
+            if (!readPreferences()) {
+                return;
+            }
+            syncStartTime = System.nanoTime();
+
+            List<String> command = new ArrayList<>(3 + asyncProfilerParameters.size());
+            command.add(asyncProfilerPath);
+            command.add("start");
+            command.addAll(asyncProfilerParameters);
+            command.add(String.valueOf(pid));
+            new ProcessBuilder(command).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -38,8 +102,6 @@ public class IdeaSync {
         long diff = (now - syncStartTime) / 1000000;
         syncStartTime = 0;
 
-        File profilesDir = new File("/tmp/profiles");
-        profilesDir.mkdirs();
         int i = 1;
         File detailsFile;
         while ((detailsFile = new File(profilesDir, "idea-profile-" + i + ".details")).exists()) {
@@ -49,7 +111,7 @@ public class IdeaSync {
         File profileFile = new File(profilesDir,  "idea-profile-" + i + ".collapsed");
         Process profilerStopProcess = null;
         try {
-            profilerStopProcess = new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
+            profilerStopProcess = new ProcessBuilder(asyncProfilerPath, "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
         } catch (IOException e) {
             e.printStackTrace();
         }

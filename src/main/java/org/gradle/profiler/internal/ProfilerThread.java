@@ -3,7 +3,6 @@ package org.gradle.profiler.internal;
 public class ProfilerThread extends Thread {
 
     public static boolean syncAlreadyDetected = false;
-    private static int daemonPid = 1;
 
     @Override
     public void run() {
