@@ -1,6 +1,11 @@
 package org.gradle.profiler.internal;
 
-public class ProfilerThread extends Thread {
+/**
+ * IntelliJ IDEA Ultimate does bytecode obfuscation, so we can't directly hook into any performed methods without
+ * JetBrain's assistance. To work around that, we periodically poll the name of the running threads and see if there's
+ * one matching to the 'Importing XXX Gradle project' pattern.
+ */
+public class IdeaProfilerThread extends Thread {
 
     public static boolean syncAlreadyDetected = false;
 

@@ -6,7 +6,7 @@ public class IdeaProfilerAgent {
 
     public static void premain(String arguments, Instrumentation instrumentation) {
         IdeaProfilerLogger.log("IntelliJ Platform sync time profiler started");
-        new ProfilerThread().start();
+        new IdeaProfilerThread().start();
         AndroidStudioSyncTimerAdvice.register(instrumentation);
     }
 }

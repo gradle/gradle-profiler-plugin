@@ -6,6 +6,10 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.instrument.Instrumentation;
 
+/**
+ * Android studio has a different method than IntelliJ IDEA that performs the synchronizaton. We can directly hook into
+ * this method with byte-buddy.
+ */
 public class AndroidStudioSyncTimerAdvice {
 
     private static final String SYNC_CLASS_NAME = "com.android.tools.idea.gradle.project.sync.GradleSyncState";
