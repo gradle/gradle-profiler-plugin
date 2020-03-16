@@ -1,14 +1,12 @@
 package org.gradle.profiler.internal;
 
-public class IdeaProfilerThread extends Thread {
+public class ProfilerThread extends Thread {
 
     public static boolean syncAlreadyDetected = false;
+    private static int daemonPid = 1;
 
     @Override
     public void run() {
-        // TODO delete
-        int gP = ProcessUtils.findGradleProcess();
-        System.out.println("gradle daemon PID: " + gP);
         while (true) {
             try {
                 if (!syncAlreadyDetected && isIntelliJSyncInProgress()) {
@@ -19,6 +17,20 @@ public class IdeaProfilerThread extends Thread {
                     IdeaSync.syncFinished();
                 }
 
+                if (syncAlreadyDetected && daemonPid == -1) {
+                    int gP = ProcessUtils.findGradleProcess();
+                    if (gP > 0) {
+                        daemonPid = gP;
+                        IdeaProfilerLogger.log("Gradle daemon started with PID: " + gP);
+                        // TODO start Gradle profiling
+                    }
+                }
+
+                if (!syncAlreadyDetected && daemonPid > 0) {
+                    // TODO stop Gradle profiling
+                    IdeaProfilerLogger.log("Gradle daemon finished sync");
+                    daemonPid = -1;
+                }
 
 
                 Thread.sleep(200);

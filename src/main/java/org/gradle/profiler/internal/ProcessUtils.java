@@ -26,7 +26,6 @@ public class ProcessUtils {
         try {
             List<String> jpsOutput = exec("jps");
             for (String s : jpsOutput) {
-                System.out.println("debug=" + s);
                 if (s.contains("GradleDaemon")) {
                     String pid = s.split(" ")[0];
 
