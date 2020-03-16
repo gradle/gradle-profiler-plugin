@@ -23,7 +23,9 @@ public class ProcessUtils {
     }
 
     public static int findGradleProcess() {
+        List<Integer> processIds = new ArrayList<>();
         try {
+
             List<String> jpsOutput = exec("jps");
             for (String s : jpsOutput) {
                 if (s.contains("GradleDaemon")) {
@@ -32,16 +34,22 @@ public class ProcessUtils {
                     List<String> systemProps = exec("jcmd " + pid + " VM.system_properties");
                     for (String s2 : systemProps) {
                         if (s2.contains("sync.profiler=enabled")) {
-                            return Integer.parseInt(pid);
+                            processIds.add(Integer.parseInt(pid));
                         }
                     }
                 }
             }
         }
         catch (Exception e) {
-            throw new RuntimeException(e);
+            IdeaProfilerLogger.log(e);
         }
-        return -1;
+
+        if (processIds.isEmpty()) {
+            return -1;
+        } else if (processIds.size() > 1) {
+            IdeaProfilerLogger.log("WARN More than one Gradle Daemon is running with gradle.profiler=enabled system property: " + processIds + ". " + processIds.get(0) + " will be profiled.");
+        }
+        return processIds.get(0);
     }
     private static List<String> exec(String command) {
         List<String> result = new ArrayList<>();

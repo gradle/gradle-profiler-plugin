@@ -17,22 +17,6 @@ public class ProfilerThread extends Thread {
                     IdeaSync.getInstance().syncFinished();
                 }
 
-                if (syncAlreadyDetected && daemonPid == -1) {
-                    int gP = ProcessUtils.findGradleProcess();
-                    if (gP > 0) {
-                        daemonPid = gP;
-                        IdeaProfilerLogger.log("Gradle daemon started with PID: " + gP);
-                        // TODO start Gradle profiling
-                    }
-                }
-
-                if (!syncAlreadyDetected && daemonPid > 0) {
-                    // TODO stop Gradle profiling
-                    IdeaProfilerLogger.log("Gradle daemon finished sync");
-                    daemonPid = -1;
-                }
-
-
                 Thread.sleep(200);
             } catch (Exception e) {
 

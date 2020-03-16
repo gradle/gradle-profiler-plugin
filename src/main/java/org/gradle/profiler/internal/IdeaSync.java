@@ -10,41 +10,27 @@ public class IdeaSync {
 
     private static final IdeaSync INSTANCE = new IdeaSync();
     private final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
-    private int pid;
     private long syncStartTime = 0;
+    private final int pid = ProcessUtils.getCurrentPid();
 
     public static IdeaSync getInstance() {
         return INSTANCE;
-    }
-
-    public void init() {
-        pid = ProcessUtils.getCurrentPid();
-        if (pid <= 0) {
-            IdeaProfilerLogger.log("ERROR cannot determine IDEA process ID");
-        } else {
-            File asyncProfiler = new File(System.getProperty("user.home") + "/async-profiler/profiler.sh");
-            if (!asyncProfiler.exists()) {
-                IdeaProfilerLogger.log("ERROR async profiler not available at " + asyncProfiler.getParentFile().getAbsolutePath());
-            }
-        }
     }
 
     public void syncStarted() {
         if (!alreadyStarted.compareAndSet(false, true)) {
             return;
         }
-
         try {
             new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "start", "-e", "cpu", "-i", "10ms", "-t", String.valueOf(pid)).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        IdeaProfilerLogger.log("Gradle sync started");
+        IdeaProfilerLogger.log("Idea sync started");
     }
 
     public void syncFinished() {
         if (!alreadyStarted.compareAndSet(true, false)) {
-            IdeaProfilerLogger.log("WARN sync already finished");
             return;
         }
 
@@ -60,24 +46,20 @@ public class IdeaSync {
             i++;
         }
 
-        int pid = ProcessUtils.getCurrentPid();
-        if (pid > 0) {
-            File profileFile = new File(profilesDir, "idea-profile-" + i + ".collapsed");
-            Process profilerStopProcess = null;
-            try {
-                profilerStopProcess = new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                profilerStopProcess.waitFor();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        File profileFile = new File(profilesDir,  "idea-profile-" + i + ".collapsed");
+        Process profilerStopProcess = null;
+        try {
+            profilerStopProcess = new ProcessBuilder(System.getProperty("user.home") + "/async-profiler/profiler.sh", "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            profilerStopProcess.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        String details = "Idea finished in " + diff + " milliseconds\n" +
-                "pid: " + pid + "\n";
+        String details = "Idea finished in " + diff + " milliseconds\npid: " + pid + "\n";
 
         BufferedWriter writer = null;
         try {
@@ -95,6 +77,6 @@ public class IdeaSync {
             }
         }
 
-        IdeaProfilerLogger.log("Gradle sync finished");
+        IdeaProfilerLogger.log("Idea sync finished");
     }
 }

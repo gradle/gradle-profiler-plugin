@@ -1,20 +1,19 @@
 package org.gradle.profiler.internal;
 
+import java.io.File;
 import java.lang.instrument.Instrumentation;
 
 public class IdeaProfilerAgent {
 
     public static void premain(String arguments, Instrumentation instrumentation) {
-
-        try {
-            IdeaProfilerLogger.log("IntelliJ Platform sync time profiler started");
-            IdeaProfilerLogger.log("To profile the Gradle daemon, append the following entry to the JVM arguments: -Dgradle.profiler=enabled. You can do that by adding the following entry to the gradle.properties file: org.gradle.jvmargs=-Dgradle.profiler.enabled");
-            IdeaSync.getInstance().init();
-
-            new ProfilerThread().start();
-            AndroidStudioSyncTimerAdvice.register(instrumentation);
-
-        } finally {
+        File asyncProfiler = new File(System.getProperty("user.home") + "/async-profiler/profiler.sh");
+        if (!asyncProfiler.exists()) {
+            IdeaProfilerLogger.log("ERROR async profiler not available at " + asyncProfiler.getParentFile().getAbsolutePath());
+            return;
         }
+
+        IdeaProfilerLogger.log("IntelliJ Platform sync time profiler started");
+        new ProfilerThread().start();
+        AndroidStudioSyncTimerAdvice.register(instrumentation);
     }
 }
