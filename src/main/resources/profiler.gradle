@@ -49,8 +49,10 @@ if (preferencesFile.exists()) {
                 if (shouldSaveProfiling) {
                     def stopCommand = "$asyncProfilerScript stop -f ${profileFile.absolutePath} $pid"
                     def detailsFile = new File(profilesDir, "gradle-profile-" + i + ".details")
-                    detailsFile.text = "Gradle finished in $diff milliseconds\n" +
-                            "pid: $pid\n";
+                    detailsFile.text = """Gradle finished in $diff milliseconds
+PID: $pid
+Async profiler parameters: %async.profiler.parameters%
+"""
 
                     def stopCommandOutput =  stopCommand.execute()
                     def logger = gradle.rootProject.logger

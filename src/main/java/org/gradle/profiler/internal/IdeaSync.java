@@ -3,6 +3,7 @@ package org.gradle.profiler.internal;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class IdeaSync {
 
@@ -121,12 +122,16 @@ public class IdeaSync {
             e.printStackTrace();
         }
 
-        String details = "Idea finished in " + diff + " milliseconds\npid: " + pid + "\n";
+        StringBuilder details = new StringBuilder();
+        details.append("Idea finished in ").append(diff).append(" milliseconds\n");
+        details.append("PID: ").append(pid).append("\n");
+        details.append("Async profiler parameters: ").append(asyncProfilerParameters.stream().collect(Collectors.joining(" "))).append("\n");
+
 
         BufferedWriter writer = null;
         try {
             writer = new BufferedWriter(new FileWriter(detailsFile));
-            writer.write(details);
+            writer.write(details.toString());
             writer.flush();
         } catch (Exception e) {
             e.printStackTrace();
