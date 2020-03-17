@@ -58,7 +58,7 @@ public class IdeaSync {
             return false;
         }
 
-        String profilesDir = (String) prefs.get("profiles.dir");
+        String profilesDir = (String) prefs.get("profiler.output.location");
         if (profilesDir == null) {
             IdeaProfilerLogger.log("Cannot read profiles dir");
             return false;

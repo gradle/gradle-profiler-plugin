@@ -26,11 +26,13 @@ public class ProfilerConfigurationExtension {
     // TODO: Would be nice to use managed properties for this, but this is only supported in newer versions of Gradle.
     private final DirectoryProperty asyncProfilerLocation;
     private final ListProperty<String> asyncProfilerParameters;
+    private final DirectoryProperty profilerOutputLocation;
 
     @Inject
     public ProfilerConfigurationExtension(ObjectFactory objects) {
         this.asyncProfilerLocation = objects.directoryProperty();
         this.asyncProfilerParameters = objects.listProperty(String.class);
+        this.profilerOutputLocation = objects.directoryProperty();
     }
 
     public DirectoryProperty getAsyncProfilerLocation() {
@@ -39,5 +41,9 @@ public class ProfilerConfigurationExtension {
 
     public ListProperty<String> getAsyncProfilerParameters() {
         return asyncProfilerParameters;
+    }
+
+    public DirectoryProperty getProfilerOutputLocation() {
+        return profilerOutputLocation;
     }
 }

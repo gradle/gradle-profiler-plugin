@@ -16,11 +16,13 @@
 
 package org.gradle.profiler.internal;
 
+import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
+import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
 import java.io.File;
@@ -36,9 +38,10 @@ public class GradleProfilerPlugin implements Plugin<Project> {
 
         ProfilerConfigurationExtension configuration = project.getExtensions().create("profiler", ProfilerConfigurationExtension.class, project.getObjects());
         String asyncProfilerHome = System.getProperty("async.profiler.home", System.getProperty("user.home") + "/async-profiler");
-        // TODO: It would be nice to use convention here.
+        // TODO: It would be nice to use convention here and for the profiler output location
         configuration.getAsyncProfilerLocation().set(new File(asyncProfilerHome));
         configuration.getAsyncProfilerParameters().convention(Arrays.asList("-e", "cpu", "-i", "10ms", "-t"));
+        configuration.getProfilerOutputLocation().set(new File(project.getLayout().getProjectDirectory().getAsFile(), ".profiles"));
 
         String group = "profiler";
 
@@ -51,7 +54,9 @@ public class GradleProfilerPlugin implements Plugin<Project> {
             task.getProfilingPreferencesFile().convention(preferences);
             task.getAsyncProfilerLocation().convention(configuration.getAsyncProfilerLocation());
             task.getAsyncProfilerParameters().convention(configuration.getAsyncProfilerParameters());
+            task.getProfilerOutputLocation().convention(configuration.getProfilerOutputLocation());
         });
+        project.afterEvaluate(p -> p.getTasks().withType(EnableProfilingTask.class).forEach(t -> t.getProfilerOutputLocation().getAsFile().get().mkdirs()));
 
         project.getTasks().register("disableProfiling", DisableProfilingTask.class, task -> {
             task.setGroup(group);

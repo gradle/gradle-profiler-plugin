@@ -3,7 +3,7 @@ long diff = System.nanoTime()
 String asyncProfilerHome = '%async.profiler.location%'
 String asyncProfilerScript = "$asyncProfilerHome/profiler.sh"
 File preferencesFile = new File('%global.preferences.file%')
-File profilesDir = new File('%profiles.dir%')
+File profilesDir = new File('%profiler.output.location%')
 
 if (preferencesFile.exists()) {
     // Workaround to obtain the PID. The ProcessHandle class is available since Java 9 only

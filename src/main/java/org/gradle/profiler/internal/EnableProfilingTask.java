@@ -22,6 +22,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
@@ -44,6 +45,7 @@ public class EnableProfilingTask extends DefaultTask {
     private final DirectoryProperty asyncProfilerLocation;
     private final RegularFileProperty profilingInitScriptFile;
     private final RegularFileProperty profilingPreferencesFile;
+    private final DirectoryProperty profilerOutputLocation;
 
     public EnableProfilingTask() {
         ObjectFactory objects = getProject().getObjects();
@@ -51,11 +53,17 @@ public class EnableProfilingTask extends DefaultTask {
         this.asyncProfilerLocation = objects.directoryProperty();
         this.profilingInitScriptFile = objects.fileProperty();
         this.profilingPreferencesFile = objects.fileProperty();
+        this.profilerOutputLocation = objects.directoryProperty();
     }
 
     @InputDirectory
     public DirectoryProperty getAsyncProfilerLocation() {
         return asyncProfilerLocation;
+    }
+
+    @InputDirectory
+    public DirectoryProperty getProfilerOutputLocation() {
+        return profilerOutputLocation;
     }
 
     @Input
@@ -105,7 +113,7 @@ public class EnableProfilingTask extends DefaultTask {
                 .replaceAll("%async.profiler.location%", getAsyncProfilerLocation().get().getAsFile().getAbsolutePath())
                 .replaceAll("%global.preferences.file%", Constants.LOCATION_GLOBAL_PREFERENCES_FILE)
                 .replaceAll("%async.profiler.parameters%", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")))
-                .replaceAll("%profiles.dir%", new File(getProject().getLayout().getProjectDirectory().getAsFile(), ".profiles").getAbsolutePath());
+                .replaceAll("%profiler.output.location%", new File(getProject().getLayout().getProjectDirectory().getAsFile(), ".profiles").getAbsolutePath());
         Files.asCharSink(profileScript, Charsets.UTF_8).write(profileScriptContent);
     }
 
@@ -114,7 +122,7 @@ public class EnableProfilingTask extends DefaultTask {
         Properties prefs = new Properties();
         prefs.put("async.profiler.location", getAsyncProfilerLocation().get().getAsFile().getAbsolutePath());
         prefs.put("async.profiler.parameters", getAsyncProfilerParameters().get().stream().collect(Collectors.joining(" ")));
-        prefs.put("profiles.dir", new File(getProject().getLayout().getProjectDirectory().getAsFile(), ".profiles").getAbsolutePath());
+        prefs.put("profiler.output.location", getProfilerOutputLocation().get().getAsFile().getAbsolutePath());
         prefs.store(new FileOutputStream(Constants.LOCATION_GLOBAL_PREFERENCES_FILE), "");
     }
 

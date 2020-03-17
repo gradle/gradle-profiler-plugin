@@ -117,7 +117,7 @@ public class GradleProfilerPluginFunctionalTest {
                 "}\n");
 
         // then:
-        runTask("enableProfiling");
+        runTask("enableProfiling", "-s");
         BuildResult result = runTask("help", "--info");
 
         // then:
