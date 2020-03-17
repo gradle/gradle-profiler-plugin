@@ -16,13 +16,10 @@
 
 package org.gradle.profiler.internal;
 
-import org.gradle.api.Action;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
-import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
 import java.io.File;
@@ -60,13 +57,6 @@ public class GradleProfilerPlugin implements Plugin<Project> {
 
         project.getTasks().register("disableProfiling", DisableProfilingTask.class, task -> {
             task.setGroup(group);
-        });
-
-        project.getTasks().register("sanitizeResults", SanitizeResultsTask.class, task -> {
-            task.setGroup(group);
-            Directory rootDir = task.getProject().getRootProject().getLayout().getProjectDirectory();
-            task.getSourceDirectory().convention(rootDir.dir(Constants.LOCATION_PROFILES));
-            task.getTargetFile().convention(rootDir.file(Constants.LOCATION_SANITIZED_PROFILE));
         });
     }
 }
