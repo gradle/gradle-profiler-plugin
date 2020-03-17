@@ -74,10 +74,10 @@ public class GradleProfilerPluginFunctionalTest {
 
         // then:
         assertOutputContains(result, "BUILD SUCCESSFUL");
-        assertOutputContains(result, "Started profiling process");
-        assertOutputContains(result, "Finished profiling process");
-        assertOutputContains(result, "Results saved at " + projectDir.getCanonicalPath() + "/.gradle-profiles/profile-1.collapsed");
-        assertFileCreatedAsync(projectDir.getAbsolutePath() + "/.gradle-profiles/profile-1.collapsed");
+        assertOutputContains(result, "[Profiler] Started profiling Gradle");
+        assertOutputContains(result, "[Profiler] Finished profiling Gradle");
+        assertOutputContains(result, "Results saved at " + projectDir.getCanonicalPath() + "/.profiles/gradle-profile-1.collapsed");
+        assertFileCreatedAsync(projectDir.getAbsolutePath() + "/.profiles/gradle-profile-1.collapsed");
     }
 
     @ParameterizedTest(name = "Can disable profiling with Gradle {0}")
@@ -92,8 +92,8 @@ public class GradleProfilerPluginFunctionalTest {
 
         // then:
         assertOutputContains(result, "BUILD SUCCESSFUL");
-        assertOutputNotContains(result, "Started profiling process");
-        assertOutputNotContains(result,"Finished profiling process");
+        assertOutputNotContains(result, "[Profiler] Started profiling Gradle");
+        assertOutputNotContains(result, "[Profiler] Finished profiling Gradle");
     }
 
     @Test
@@ -128,7 +128,7 @@ public class GradleProfilerPluginFunctionalTest {
     @Test
     @EnabledOnOs(OS.LINUX)
     public void show_warning_for_missing_linux_configuration() {
-        // setup:
+        // setupó
         runTask("enableProfiling");
 
         // when:
@@ -136,16 +136,6 @@ public class GradleProfilerPluginFunctionalTest {
 
         // then:
         assertOutputContains(result, "Async profiler won't capture perf_events.");
-    }
-
-    @Test
-    public void show_elapsed_time() {
-        // setup:
-        runTask("enableProfiling");
-        BuildResult result = runTask("help");
-
-        // then:
-        assertOutputMatches(result, "Gradle finished in \\d+ milliseconds");
     }
 
     private void writeBuildFile(String content) throws IOException {
