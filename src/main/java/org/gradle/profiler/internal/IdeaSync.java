@@ -81,13 +81,7 @@ public class IdeaSync {
                 return;
             }
             syncStartTime = System.nanoTime();
-
-            List<String> command = new ArrayList<>(3 + asyncProfilerParameters.size());
-            command.add(asyncProfilerPath);
-            command.add("start");
-            command.addAll(asyncProfilerParameters);
-            command.add(String.valueOf(pid));
-            new ProcessBuilder(command).start();
+            startProfiler();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -110,9 +104,30 @@ public class IdeaSync {
         }
 
         File profileFile = new File(profilesDir,  "idea-profile-" + i + ".collapsed");
+        stopProfiler(profileFile);
+
+        StringBuilder details = new StringBuilder();
+        details.append("Idea finished in ").append(diff).append(" milliseconds\n");
+        details.append("PID: ").append(pid).append("\n");
+        details.append("Async profiler parameters: ").append(asyncProfilerParameters.stream().collect(Collectors.joining(" "))).append("\n");
+        writeFile(detailsFile, details.toString());
+
+        IdeaProfilerLogger.log("Idea sync finished");
+    }
+
+    private void startProfiler() throws IOException {
+        List<String> command = new ArrayList<>(3 + asyncProfilerParameters.size());
+        command.add(asyncProfilerPath);
+        command.add("start");
+        command.addAll(asyncProfilerParameters);
+        command.add(String.valueOf(pid));
+        new ProcessBuilder(command).start();
+    }
+
+    private void stopProfiler(File outputFile) {
         Process profilerStopProcess = null;
         try {
-            profilerStopProcess = new ProcessBuilder(asyncProfilerPath, "stop", "-f", profileFile.getAbsolutePath(), String.valueOf(pid)).start();
+            profilerStopProcess = new ProcessBuilder(asyncProfilerPath, "stop", "-f", outputFile.getAbsolutePath(), String.valueOf(pid)).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -121,17 +136,13 @@ public class IdeaSync {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
 
-        StringBuilder details = new StringBuilder();
-        details.append("Idea finished in ").append(diff).append(" milliseconds\n");
-        details.append("PID: ").append(pid).append("\n");
-        details.append("Async profiler parameters: ").append(asyncProfilerParameters.stream().collect(Collectors.joining(" "))).append("\n");
-
-
+    private void writeFile(File detailsFile, String details) {
         BufferedWriter writer = null;
         try {
             writer = new BufferedWriter(new FileWriter(detailsFile));
-            writer.write(details.toString());
+            writer.write(details);
             writer.flush();
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,7 +154,5 @@ public class IdeaSync {
                 }
             }
         }
-
-        IdeaProfilerLogger.log("Idea sync finished");
     }
 }

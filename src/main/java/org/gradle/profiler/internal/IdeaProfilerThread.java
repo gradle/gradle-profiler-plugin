@@ -23,7 +23,6 @@ public class IdeaProfilerThread extends Thread {
 
                 Thread.sleep(200);
             } catch (Exception e) {
-
                 IdeaProfilerLogger.log("IntelliJ Platform sync time profiler stopped");
                 IdeaProfilerLogger.log(e);
                 if (e instanceof InterruptedException) {
