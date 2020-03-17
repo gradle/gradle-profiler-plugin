@@ -21,4 +21,24 @@ public class ProcessUtils {
             return -1;
         }
     }
+
+    public static String findIdeaProcess() {
+        String process = null;
+        try {
+            String line;
+            Process p = Runtime.getRuntime().exec("jps -v");
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((line = input.readLine()) != null) {
+                if (line.trim().contains("idea.home.path")) {
+                    process = line;
+                    break;
+                }
+            }
+            input.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return process;
+    }
 }

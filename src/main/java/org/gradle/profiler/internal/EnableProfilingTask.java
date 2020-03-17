@@ -127,7 +127,7 @@ public class EnableProfilingTask extends DefaultTask {
     }
 
     private void checkRunningIdea() {
-        String ideaProcessLine = findIdeaProcess();
+        String ideaProcessLine = ProcessUtils.findIdeaProcess();
         if (ideaProcessLine == null) {
             getProject().getLogger().lifecycle("[Profiler] IntelliJ IDEA not running");
         } else {
@@ -139,8 +139,7 @@ public class EnableProfilingTask extends DefaultTask {
                 getProject().getLogger().lifecycle("[Profiler] IntelliJ IDEA is running without a profiler agent. You can install it with the following steps.\n" +
                                                    "             - Open Menu > Help > Edit Custom VM Options\n" +
                                                    "             - At the end file add the following entry: " + agentConfig + "\n" +
-                                                   "             - Restart IDEA\n" +
-                                                   "           (Note: this only works with IntelliJ IDEA Community Edition)");
+                                                   "             - Restart IDEA\n");
             }
         }
     }
@@ -154,24 +153,4 @@ public class EnableProfilingTask extends DefaultTask {
             return "/path/to/gradle-profiler-plugin.jar";
         }
     }
-
-    public static String findIdeaProcess() {
-        String process = null;
-        try {
-            String line;
-            Process p = Runtime.getRuntime().exec("jps -v");
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            while ((line = input.readLine()) != null) {
-                if (line.trim().contains("idea.home.path")) {
-                    process = line;
-                    break;
-                }
-            }
-            input.close();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return process;
-      }
 }
