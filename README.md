@@ -12,8 +12,10 @@ The main purpose of this plugin is to help profiling the Gradle and the IDE proc
 The plugin attaches async-profiler to the Gradle and the IDE processes during the project synchronization.
 On the Gradle side, the plugin deploys a custom init script to the gradle user home. 
 This script starts the profiler at the beginning of the build and stops it in a `buildFinished` hook.
-This is - obviously - an interpolation as the measurement misses the time between the daemon startup and until the init scripts being evaluated.
-This is acceptable though, as we have other means to investigate what happens in that build stage.
+This is an interpolation obviously.
+The measurement misses the time between the daemon startup and until the init scripts being evaluated.
+Also, from the IDE's point-of-view, Gradle is not finished when the `buildFinished` hook is executed, but when the 
+Tooling API method invocation returns.
 
 The IDE - IntelliJ IDEA or Android Studio - is instrumented with a Java agent, which is part of this plugin's implementation. 
 Android Studio has a specific method that runs the project sync. The java agent hooks into that method's entry and exit
@@ -55,7 +57,6 @@ Along with a `.collapsed` file, a `.details` file is generated that contains the
 To enable the IDE you need to adjust the VM settings: Menu > Open Menu > Help > Edit Custom VM Options. In the editor, add the following entry to a new line:
 
     -javaagent:/path/to/gradle-profiler-plugin-VERSION.jar
-
 
 #### Disable profiling
 
