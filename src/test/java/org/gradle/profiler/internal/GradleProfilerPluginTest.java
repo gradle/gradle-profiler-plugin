@@ -35,6 +35,5 @@ public class GradleProfilerPluginTest {
         // then:
         assertNotNull(project.getTasks().findByName("enableProfiling"));
         assertNotNull(project.getTasks().findByName("disableProfiling"));
-        assertNotNull(project.getTasks().findByName("sanitizeResults"));
     }
 }
