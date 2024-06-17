@@ -3,14 +3,14 @@ plugins {
     id 'java-library'
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id 'com.gradle.plugin-publish' version '0.10.1'
+    id 'com.gradle.plugin-publish' version '1.2.1'
 }
 
 group = 'org.gradle.profiler'
 version = '0.0.3'
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -45,20 +45,17 @@ check {
 }
 
 gradlePlugin {
+    website = 'https://github.com/gradle/gradle-profiler-plugin'
+    vcsUrl = 'https://github.com/gradle/gradle-profiler-plugin'
     plugins {
         profiler {
             id = 'org.gradle.gradle-profiler'
             implementationClass = 'org.gradle.profiler.internal.GradleProfilerPlugin'
             displayName = "Gradle Profiler Plugin"
             description = "Profiles Gradle builds with async profiler"
+            tags = ['gradle', 'profiler', 'async-profiler']
         }
     }
-}
-
-pluginBundle {
-    website = 'https://github.com/gradle/gradle-profiler-plugin'
-    vcsUrl = 'https://github.com/gradle/gradle-profiler-plugin'
-    tags = ['gradle', 'profiler', 'async-profiler']
 }
 
 // the produced jar file can be attached to idea as a java agent
